@@ -1,0 +1,133 @@
+package com.example.calculadora
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            CalculadoraApp()
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CalculadoraApp() {
+    var primerValor by remember { mutableStateOf("") }
+    var segundoValor by remember { mutableStateOf("") }
+    var operacion by remember { mutableStateOf("suma") }
+    var resultado by remember { mutableStateOf<String?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    val operaciones = listOf("suma", "resta", "multiplicacion", "division")
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(text = "Calculadora en Kotlin", style = MaterialTheme.typography.headlineSmall)
+
+        OutlinedTextField(
+            value = primerValor,
+            onValueChange = { primerValor = it },
+            label = { Text("Primer valor") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
+            value = segundoValor,
+            onValueChange = { segundoValor = it },
+            label = { Text("Segundo valor") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+
+        var expanded by remember { mutableStateOf(false) }
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = operacion,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Operación") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth()
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                operaciones.forEach { opcion ->
+                    DropdownMenuItem(
+                        text = { Text(opcion) },
+                        onClick = {
+                            operacion = opcion
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+
+        Button(
+            onClick = {
+                val num1 = primerValor.toDoubleOrNull()
+                val num2 = segundoValor.toDoubleOrNull()
+
+                if (num1 == null || num2 == null) {
+                    error = "Debe ingresar números válidos"
+                    resultado = null
+                } else {
+                    val res = calcular(num1, num2, operacion)
+                    if (res != null) {
+                        resultado = res.toString()
+                        error = null
+                    } else {
+                        error = "Error en la operación (posible división entre 0)"
+                        resultado = null
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Calcular")
+        }
+
+        resultado?.let {
+            Text(text = "Resultado: $it", style = MaterialTheme.typography.bodyLarge)
+        }
+
+        error?.let {
+            Text(text = it, color = MaterialTheme.colorScheme.error)
+        }
+    }
+}
+
+fun calcular(a: Double, b: Double, operacion: String): Double? {
+    return when (operacion) {
+        "suma" -> a + b
+        "resta" -> a - b
+        "multiplicacion" -> a * b
+        "division" -> if (b != 0.0) a / b else null
+        else -> null
+    }
+}
